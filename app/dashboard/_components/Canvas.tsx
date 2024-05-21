@@ -4,37 +4,47 @@ import { ACTIONS } from './constant';
 
 const roughGenerator = rough.generator();
 
-export function Canvas({ canvasRef, ctxRef, elements, setElements, action ,fillColor}) {
+export function Canvas({ canvasRef, ctxRef, elements, setElements, action, fillColor }) {
     const [isDrawing, setIsDrawing] = useState(false);
+    const [canvasWidth, setCanvasWidth] = useState(0);
+    const [canvasHeight, setCanvasHeight] = useState(0);
+
+    useEffect(() => {
+        const updateCanvasDimensions = () => {
+            setCanvasWidth(window.innerWidth);
+            setCanvasHeight(window.innerHeight);
+        };
+
+        if (typeof window !== 'undefined') {
+            updateCanvasDimensions();
+            window.addEventListener('resize', updateCanvasDimensions);
+        }
+
+        return () => {
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('resize', updateCanvasDimensions);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas.getContext('2d');
         ctxRef.current = ctx;
-        
+
         ctx.strokeStyle = fillColor;
         ctx.lineWidth = 2;
-        ctx.lineCap = "round"
+        ctx.lineCap = 'round';
 
-        const setCanvasDim = () => {
-            const canvasWidth = 800; // Set desired canvas width
-            const canvasHeight = 600; // Set desired canvas height
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
-            ctx.scale(1, 1); // Adjust as necessary for high DPI
-        };
+        // Ensure the canvas dimensions are set correctly
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
 
-        setCanvasDim();
-        window.addEventListener("resize", setCanvasDim);
+    }, [canvasRef, ctxRef, fillColor, canvasWidth, canvasHeight]);
 
-        return () => {
-            window.removeEventListener("resize", setCanvasDim);
-        };
-    }, []);
     useEffect(() => {
         ctxRef.current.strokeStyle = fillColor;
-
-    },[fillColor])
+    }, [fillColor]);
 
     useLayoutEffect(() => {
         const roughCanvas = rough.canvas(canvasRef.current);
@@ -45,38 +55,37 @@ export function Canvas({ canvasRef, ctxRef, elements, setElements, action ,fillC
         elements.forEach((element) => {
             if (element.type === ACTIONS.RECTANGLE) {
                 roughCanvas.draw(
-                    roughGenerator.rectangle(element.offsetX, element.offsetY, element.width, element.height,{
+                    roughGenerator.rectangle(element.offsetX, element.offsetY, element.width, element.height, {
                         stroke: element.stroke,
-                        strokeWidth:2,
-                        roughness:0
+                        strokeWidth: 2,
+                        roughness: 0,
                     })
                 );
-            } else if(element.type === ACTIONS.CIRCLE){
+            } else if (element.type === ACTIONS.CIRCLE) {
                 roughCanvas.draw(
-                    roughGenerator.ellipse(element.offsetX, element.offsetY, element.width, element.height,{
+                    roughGenerator.ellipse(element.offsetX, element.offsetY, element.width, element.height, {
                         stroke: element.stroke,
-                        strokeWidth:2,
-                        roughness:0
+                        strokeWidth: 2,
+                        roughness: 0,
                     })
                 );
-            }
-            else if (element.type === ACTIONS.SCRIBBLE) {
-                roughCanvas.linearPath(element.path,{
+            } else if (element.type === ACTIONS.SCRIBBLE) {
+                roughCanvas.linearPath(element.path, {
                     stroke: element.stroke,
-                    strokeWidth:2,
-                    roughness:0
+                    strokeWidth: 2,
+                    roughness: 0,
                 });
             } else if (element.type === ACTIONS.ARROW) {
                 roughCanvas.draw(
-                    roughGenerator.line(element.offsetX, element.offsetY, element.width, element.height,{
+                    roughGenerator.line(element.offsetX, element.offsetY, element.width, element.height, {
                         stroke: element.stroke,
-                        strokeWidth:2,
-                        roughness:0
+                        strokeWidth: 2,
+                        roughness: 0,
                     })
                 );
             }
         });
-    }, [elements]);
+    }, [canvasRef, elements]);
 
     const handleMouseDown = (e) => {
         const { offsetX, offsetY } = e.nativeEvent;
@@ -84,7 +93,7 @@ export function Canvas({ canvasRef, ctxRef, elements, setElements, action ,fillC
             setElements((prevElements) => [
                 ...prevElements,
                 {
-                    type: "SCRIBBLE",
+                    type: 'SCRIBBLE',
                     offsetX,
                     offsetY,
                     path: [[offsetX, offsetY]],
@@ -95,7 +104,7 @@ export function Canvas({ canvasRef, ctxRef, elements, setElements, action ,fillC
             setElements((prevElements) => [
                 ...prevElements,
                 {
-                    type: "ARROW",
+                    type: 'ARROW',
                     offsetX,
                     offsetY,
                     width: offsetX,
@@ -107,7 +116,7 @@ export function Canvas({ canvasRef, ctxRef, elements, setElements, action ,fillC
             setElements((prevElements) => [
                 ...prevElements,
                 {
-                    type: "RECTANGLE",
+                    type: 'RECTANGLE',
                     offsetX,
                     offsetY,
                     width: 0,
@@ -115,11 +124,11 @@ export function Canvas({ canvasRef, ctxRef, elements, setElements, action ,fillC
                     stroke: fillColor,
                 },
             ]);
-        } else if (action === ACTIONS.CIRCLE){
+        } else if (action === ACTIONS.CIRCLE) {
             setElements((prevElements) => [
                 ...prevElements,
                 {
-                    type: "CIRCLE",
+                    type: 'CIRCLE',
                     offsetX,
                     offsetY,
                     width: 0,
@@ -177,8 +186,8 @@ export function Canvas({ canvasRef, ctxRef, elements, setElements, action ,fillC
                         }
                     })
                 );
-            } else if(action === ACTIONS.CIRCLE){
-                 setElements((prevElements) =>
+            } else if (action === ACTIONS.CIRCLE) {
+                setElements((prevElements) =>
                     prevElements.map((ele, index) => {
                         if (index === elements.length - 1) {
                             return {
@@ -206,7 +215,7 @@ export function Canvas({ canvasRef, ctxRef, elements, setElements, action ,fillC
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             className='overflow-hidden'
-            style={{ width: window.innerWidth, height: window.innerHeight }}
+            style={{ width: canvasWidth, height: canvasHeight }}
         />
     );
 }
